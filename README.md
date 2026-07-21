@@ -36,21 +36,12 @@ npm run build    # type-check + production build to dist/
 npm run preview  # serve the built dist/; production check
 ```
 
-## Where things live
+## Google Calender Setup (OAuth setup)
 
-```
-src/
-  store/    useStore.ts (persisted app state), useUI.ts (ephemeral), types.ts
-  lib/      dates.ts (streaks + heatmap), search.ts (bangs)
-  data/     defaults.ts (seed categories, links, palette)
-  components/
-    habits/ HabitTracker, HabitItem, ProgressRing, Heatmap, AddHabit
-    notes/  StickyNotes    links/ QuickLinks    ui/ Modal
-    Header, SearchBar, Pomodoro, CommandPalette
-```
-
-## Possible next steps
-
-- Google Calendar / Sheets sync (the Zustand store is the single seam to swap the
-  storage backend).
-- Weekly review stats, habit weighting/frequency, drag-to-reorder notes.
+In [Google Cloud Console](https://console.cloud.google.com/welcome?project=my-homepage-503119):
+  1. Create a project → **APIs & Services** → **Enable APIs** → **enable "Google Calendar API"**.
+  2. OAuth consent screen: choose External, fill the basics, and add your own email as a Test user.
+  3. **Credentials** → **Create Credentials** → **OAuth client ID** → **Web application**. Under Authorized **JavaScript origins** add both:
+    - https://kane-weng.github.io
+    - http://localhost:5173 (for local dev)
+  4. Copy the **Client ID** → paste into the homepage's **⚙ Settings** → **Google Calendar**, Save, then click **Connect**.

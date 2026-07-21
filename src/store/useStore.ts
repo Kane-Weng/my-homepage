@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  Background,
   Category,
   Completion,
   DateStr,
   Habit,
+  LinkMode,
   QuickLink,
   Settings,
   StickyNote,
@@ -52,9 +54,19 @@ interface AppState {
   removeNote: (id: string) => void;
 
   // Links
-  addLink: (input: { title: string; url: string; categoryId?: string }) => void;
+  addLink: (input: {
+    title: string;
+    url: string;
+    categoryId?: string;
+    tag?: QuickLink["tag"];
+  }) => void;
   updateLink: (id: string, patch: Partial<Omit<QuickLink, "id">>) => void;
   removeLink: (id: string) => void;
+
+  // Settings
+  updateSettings: (patch: Partial<Settings>) => void;
+  setMode: (mode: LinkMode) => void;
+  setBackground: (background: Background) => void;
 }
 
 const completionKey = (habitId: string, date: DateStr) => `${habitId}|${date}`;
@@ -152,11 +164,11 @@ export const useStore = create<AppState>()(
       removeNote: (id) =>
         set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
 
-      addLink: ({ title, url, categoryId }) =>
+      addLink: ({ title, url, categoryId, tag }) =>
         set((s) => ({
           links: [
             ...s.links,
-            { id: uid("lnk"), title: title.trim(), url: url.trim(), categoryId },
+            { id: uid("lnk"), title: title.trim(), url: url.trim(), categoryId, tag },
           ],
         })),
       updateLink: (id, patch) =>
@@ -165,7 +177,26 @@ export const useStore = create<AppState>()(
         })),
       removeLink: (id) =>
         set((s) => ({ links: s.links.filter((l) => l.id !== id) })),
+
+      updateSettings: (patch) =>
+        set((s) => ({ settings: { ...s.settings, ...patch } })),
+      setMode: (mode) =>
+        set((s) => ({ settings: { ...s.settings, mode } })),
+      setBackground: (background) =>
+        set((s) => ({ settings: { ...s.settings, background } })),
     }),
-    { name: "my-homepage", version: 1 },
+    {
+      name: "my-homepage",
+      version: 2,
+      // v1 saved data predates background/mode/googleClientId. Backfill any
+      // missing settings fields from defaults so selectors never read undefined.
+      migrate: (persisted) => {
+        const state = persisted as { settings?: Partial<Settings> };
+        return {
+          ...(persisted as object),
+          settings: { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) },
+        } as AppState;
+      },
+    },
   ),
 );

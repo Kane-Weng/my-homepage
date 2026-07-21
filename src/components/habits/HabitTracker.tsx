@@ -59,7 +59,7 @@ export default function HabitTracker() {
           <h2 className="text-lg font-semibold">Today's habits</h2>
           <p className="text-sm text-muted">
             {groups.total === 0
-              ? "No habits yet — add your first."
+              ? "No habits yet."
               : doneCount === groups.total
                 ? "All done. Nice work. 🎉"
                 : `${groups.total - doneCount} left to go.`}
@@ -95,8 +95,7 @@ export default function HabitTracker() {
 
         {groups.total === 0 && (
           <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted">
-            Track things you want to do daily — LeetCode, reading papers, job
-            applications. Streaks build as you keep at it.
+            Track things you want to do daily. Streaks build as you keep at it.
           </div>
         )}
       </div>

@@ -5,10 +5,13 @@ import QuickLinks from "./components/links/QuickLinks";
 import StickyNotes from "./components/notes/StickyNotes";
 import Pomodoro from "./components/Pomodoro";
 import CommandPalette from "./components/CommandPalette";
+import AppBackground from "./components/AppBackground";
+import CalendarPanel from "./components/CalendarPanel";
 
 export default function App() {
   return (
     <div className="mx-auto min-h-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
+      <AppBackground />
       <Header />
 
       <div className="mx-auto mt-6 max-w-2xl">
@@ -21,9 +24,10 @@ export default function App() {
           <HabitTracker />
         </div>
 
-        {/* Right: quick links, pomodoro, sticky notes */}
+        {/* Right: quick links, calendar, pomodoro, sticky notes */}
         <div className="space-y-6">
           <QuickLinks />
+          <CalendarPanel />
           <Pomodoro />
           <StickyNotes />
         </div>

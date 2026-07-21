@@ -3,9 +3,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
-  // GitHub Pages serves this project at https://kane-weng.github.io/my-homepage/,
-  // so built asset URLs must be prefixed with the repo name. Dev stays at "/".
-  base: command === "build" ? "/my-homepage/" : "/",
+export default defineConfig({
+  // GitHub Pages serves this project under the repo name, so all asset URLs
+  // must be prefixed with it. Applied in dev and preview too, so local runs
+  // (http://localhost:5173/my-homepage/) match production exactly.
+  base: "/my-homepage/",
   plugins: [react(), tailwindcss()],
-}));
+});

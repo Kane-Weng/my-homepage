@@ -32,12 +32,28 @@ export interface StickyNote {
   updatedAt: number;
 }
 
+/** Used by work/relax modes to decide which links stay visible. */
+export type LinkTag = "work" | "entertainment" | "neutral";
+
 export interface QuickLink {
   id: string;
   title: string;
   url: string;
   categoryId?: string;
+  /** Defaults to "neutral" when unset. */
+  tag?: LinkTag;
 }
+
+/** Which links are shown. work hides entertainment; relax hides work. */
+export type LinkMode = "all" | "work" | "relax";
+
+/** Page background. Discriminated union so each kind carries only what it needs.
+ *  "upload" reads a Blob from IndexedDB under a fixed key (see lib/idb.ts). */
+export type Background =
+  | { kind: "default" }
+  | { kind: "gradient"; value: string } // a CSS gradient string
+  | { kind: "url"; value: string } // remote image URL
+  | { kind: "upload" };
 
 export interface PomodoroSettings {
   /** Minutes. */
@@ -52,4 +68,9 @@ export interface Settings {
   /** Base URL that receives the query as `?q=`. */
   searchEngine: string;
   pomodoro: PomodoroSettings;
+  background: Background;
+  mode: LinkMode;
+  /** User's own Google OAuth client ID (created in Google Cloud Console).
+   *  Empty until they paste it in Settings; required for Calendar sync. */
+  googleClientId: string;
 }

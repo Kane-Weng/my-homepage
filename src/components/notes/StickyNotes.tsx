@@ -56,7 +56,7 @@ export default function StickyNotes() {
           onClick={addNote}
           className="w-full rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted hover:border-accent-2/50 hover:text-fg"
         >
-          Throw a quick thought here — it stays until you clear it.
+          Throw a quick thought here!
         </button>
       ) : (
         <div className="grid grid-cols-2 gap-2">
