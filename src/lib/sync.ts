@@ -27,43 +27,16 @@ function markLocalChange() {
   localStorage.setItem(LOCAL_TS_KEY, String(lastLocalChangeAt));
 }
 
-// ---- Merge (additive; never drops completions, so streaks can't be lost) ----
-
-/** Union by id; on a conflicting id, `winner` wins. */
-function unionById<T extends { id: string }>(loser: T[], winner: T[]): T[] {
-  const m = new Map<string, T>();
-  for (const x of loser) m.set(x.id, x);
-  for (const x of winner) m.set(x.id, x);
-  return [...m.values()];
-}
-
-/** Notes carry their own updatedAt, so keep the newer copy of each id. */
-function mergeNotes(a: StickyNote[], b: StickyNote[]): StickyNote[] {
-  const m = new Map<string, StickyNote>();
-  for (const n of [...a, ...b]) {
-    const prev = m.get(n.id);
-    if (!prev || n.updatedAt > prev.updatedAt) m.set(n.id, n);
-  }
-  return [...m.values()];
-}
-
+// ---- Merge: last-write-wins on the whole snapshot ----
+// Whichever device edited most recently wins outright. This keeps unchecks and
+// deletions working — an additive merge would resurrect a habit/completion you
+// removed. Correct for a single user editing one device at a time.
 function merge(
   local: SyncSnapshot,
   remote: SyncSnapshot,
   remoteNewer: boolean,
 ): SyncSnapshot {
-  const winner = remoteNewer ? remote : local;
-  const loser = remoteNewer ? local : remote;
-  return {
-    // Completions union regardless of who's newer — a day done on either
-    // device stays done. This is what protects the streak.
-    completions: { ...loser.completions, ...winner.completions },
-    categories: unionById(loser.categories, winner.categories),
-    habits: unionById(loser.habits, winner.habits),
-    links: unionById(loser.links, winner.links),
-    notes: mergeNotes(local.notes, remote.notes),
-    settings: winner.settings,
-  };
+  return remoteNewer ? remote : local;
 }
 
 // ---- Pull / push ----

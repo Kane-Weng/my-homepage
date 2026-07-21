@@ -79,11 +79,10 @@ workflow reads them at build time. Re-run the workflow (or push) to rebuild.
 ---
 
 ## How conflicts are handled
-Sync merges **additively** so you can't lose a streak:
-- **Completions** from both devices are unioned — a day done anywhere stays done.
-- **Habits / links / categories** merge by id; **notes** keep the newer edit.
-- **Settings** use last-write-wins.
+Sync is **last-write-wins**: whichever device you edited most recently becomes the
+source of truth on the next sync. Since you use one device at a time, "the latest
+change is the truth" is what you'd expect — checking, **un**checking, and deleting
+all propagate correctly.
 
-Trade-off: because merges are additive, **deleting** a habit/link on one laptop may
-not propagate until you also delete it on the other (no tombstones). Good enough for
-personal use; can be upgraded later if it gets annoying.
+Caveat: if you edit on two devices *without letting them sync in between*, the more
+recent edit wins and the other device's changes are overwritten.

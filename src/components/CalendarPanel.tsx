@@ -38,11 +38,22 @@ export default function CalendarPanel() {
     <section className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted">Today's calendar</h2>
-        {status === "connected" && (
-          <button onClick={load} className="text-xs text-muted hover:text-fg">
-            Refresh
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {status === "connected" && (
+            <button onClick={load} className="text-xs text-muted hover:text-fg">
+              Refresh
+            </button>
+          )}
+          <a
+            href="https://calendar.google.com"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-accent-2 hover:opacity-80"
+            title="Open Google Calendar to add or edit events"
+          >
+            Open ↗
+          </a>
+        </div>
       </div>
 
       {!supabaseEnabled ? (

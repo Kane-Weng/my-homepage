@@ -43,6 +43,8 @@ interface Props {
 export default function Settings({ open, onClose }: Props) {
   const background = useStore((s) => s.settings.background);
   const setBackground = useStore((s) => s.setBackground);
+  const categories = useStore((s) => s.categories);
+  const removeCategory = useStore((s) => s.removeCategory);
 
   const [urlDraft, setUrlDraft] = useState(
     background.kind === "url" ? background.value : "",
@@ -141,6 +143,41 @@ export default function Settings({ open, onClose }: Props) {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Categories */}
+        <section>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Categories
+          </h3>
+          {categories.length === 0 ? (
+            <p className="text-xs text-muted">No categories yet.</p>
+          ) : (
+            <ul className="space-y-1">
+              {categories.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2"
+                >
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ background: c.color }}
+                  />
+                  <span className="flex-1 truncate text-sm">{c.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(c.id)}
+                    className="text-xs text-muted hover:text-rose-400"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-[11px] text-muted">
+            Removing a category keeps its habits — they move to “Uncategorized.”
+          </p>
         </section>
 
         {/* Data backup */}
