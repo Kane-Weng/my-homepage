@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ModeSwitcher from "./ModeSwitcher";
 import Settings from "./Settings";
+import AccountButton from "./AccountButton";
 
 function greeting(h: number): string {
   if (h < 5) return "Still up";
@@ -32,6 +33,7 @@ export default function Header({ name = "Kane" }: { name?: string }) {
       </div>
 
       <div className="flex items-center gap-2">
+        <AccountButton />
         <ModeSwitcher />
         <button
           onClick={() => setSettingsOpen(true)}

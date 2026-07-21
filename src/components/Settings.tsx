@@ -3,6 +3,7 @@ import { useStore } from "../store/useStore";
 import Modal from "./ui/Modal";
 import { BACKGROUND_PRESETS } from "../data/defaults";
 import { BG_IMAGE_KEY, idbDel, idbSet } from "../lib/idb";
+import { exportData, importData } from "../lib/backup";
 import type { Background } from "../store/types";
 
 /** A small preview swatch for a background option. */
@@ -41,22 +42,13 @@ interface Props {
 
 export default function Settings({ open, onClose }: Props) {
   const background = useStore((s) => s.settings.background);
-  const googleClientId = useStore((s) => s.settings.googleClientId);
   const setBackground = useStore((s) => s.setBackground);
-  const updateSettings = useStore((s) => s.updateSettings);
 
   const [urlDraft, setUrlDraft] = useState(
     background.kind === "url" ? background.value : "",
   );
-  const [clientDraft, setClientDraft] = useState(googleClientId);
-  const [clientSaved, setClientSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const saveClientId = () => {
-    updateSettings({ googleClientId: clientDraft.trim() });
-    setClientSaved(true);
-    window.setTimeout(() => setClientSaved(false), 1500);
-  };
+  const backupRef = useRef<HTMLInputElement>(null);
 
   const presetActive = (bg: Background) =>
     bg.kind === background.kind &&
@@ -151,32 +143,46 @@ export default function Settings({ open, onClose }: Props) {
           </div>
         </section>
 
-        {/* Google Calendar */}
+        {/* Data backup */}
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-            Google Calendar
+            Backup
           </h3>
           <p className="mb-2 text-xs text-muted">
-            Paste the OAuth <strong>Client ID</strong> from your Google Cloud
-            project to enable calendar sync.
+            Export a JSON file, or import one on another device. (Your data lives
+            in this browser only.)
           </p>
           <div className="flex gap-2">
-            <input
-              value={clientDraft}
-              onChange={(e) => {
-                setClientDraft(e.target.value);
-                setClientSaved(false);
-              }}
-              placeholder="xxxx.apps.googleusercontent.com"
-              className="flex-1 rounded-lg bg-surface-2 px-3 py-2 text-sm outline-none ring-accent-2/50 focus:ring-2"
-            />
             <button
               type="button"
-              onClick={saveClientId}
-              className="rounded-lg bg-accent-2 px-3 py-2 text-sm font-medium text-bg hover:opacity-90"
+              onClick={exportData}
+              className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted hover:text-fg"
             >
-              {clientSaved ? "Saved ✓" : "Save"}
+              Export
             </button>
+            <button
+              type="button"
+              onClick={() => backupRef.current?.click()}
+              className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted hover:text-fg"
+            >
+              Import…
+            </button>
+            <input
+              ref={backupRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                try {
+                  await importData(f);
+                } catch {
+                  alert("Couldn't read that backup file.");
+                }
+              }}
+            />
           </div>
         </section>
       </div>

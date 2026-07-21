@@ -1,102 +1,70 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { useStore } from "../store/useStore";
-import {
-  clearStoredToken,
-  fetchTodayEvents,
-  loadStoredToken,
-  requestAccessToken,
-  saveStoredToken,
-  type CalendarEvent,
-} from "../lib/googleCalendar";
+import { useSync } from "../store/useSync";
+import { supabaseEnabled } from "../lib/supabase";
+import { getFreshGoogleToken } from "../lib/googleAuth";
+import { fetchTodayEvents, type CalendarEvent } from "../lib/googleCalendar";
 
 type Status = "idle" | "loading" | "connected" | "error";
 
 export default function CalendarPanel() {
-  const clientId = useStore((s) => s.settings.googleClientId);
+  const user = useSync((s) => s.user);
   const [status, setStatus] = useState<Status>("idle");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [error, setError] = useState<string>("");
-  const tokenRef = useRef<string>("");
 
-  const load = async (token: string) => {
-    const list = await fetchTodayEvents(token);
-    setEvents(list);
-    setStatus("connected");
-  };
-
-  // On mount, reuse a cached token (if still valid) so a reload doesn't
-  // re-trigger the OAuth popup. Only falls back to Connect once it expires.
-  useEffect(() => {
-    if (!clientId) return;
-    const stored = loadStoredToken();
-    if (!stored) return;
-    tokenRef.current = stored.access_token;
-    setStatus("loading");
-    load(stored.access_token).catch(() => {
-      clearStoredToken();
-      setStatus("idle");
-    });
-  }, [clientId]);
-
-  const connect = async () => {
-    if (!clientId) return;
+  const load = async () => {
     setStatus("loading");
     setError("");
     try {
-      const token = await requestAccessToken(clientId);
-      tokenRef.current = token.access_token;
-      saveStoredToken(token);
-      await load(token.access_token);
+      // Edge Function silently mints a fresh Google token — no popup.
+      const token = await getFreshGoogleToken();
+      setEvents(await fetchTodayEvents(token));
+      setStatus("connected");
     } catch (e) {
       setStatus("error");
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : "Couldn't load calendar.");
     }
   };
 
-  const refresh = async () => {
-    try {
-      setStatus("loading");
-      await load(tokenRef.current);
-    } catch {
-      // Token likely expired — clear it and re-run the auth flow.
-      clearStoredToken();
-      connect();
-    }
-  };
+  // Load automatically once the user is signed in.
+  useEffect(() => {
+    if (user) load();
+    else setStatus("idle");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted">Today's calendar</h2>
         {status === "connected" && (
-          <button
-            onClick={refresh}
-            className="text-xs text-muted hover:text-fg"
-          >
+          <button onClick={load} className="text-xs text-muted hover:text-fg">
             Refresh
           </button>
         )}
       </div>
 
-      {!clientId ? (
+      {!supabaseEnabled ? (
         <p className="text-xs text-muted">
-          Add your Google OAuth Client ID in Settings (⚙) to sync your calendar.
+          Calendar sync needs Supabase configured (see SUPABASE_SETUP.md).
         </p>
-      ) : status === "idle" || status === "error" ? (
-        <div className="space-y-2">
-          <button
-            onClick={connect}
-            className="w-full rounded-lg bg-accent-2 px-3 py-2 text-sm font-medium text-bg hover:opacity-90"
-          >
-            Connect Google Calendar
-          </button>
-          {status === "error" && (
-            <p className="text-xs text-rose-400">{error}</p>
-          )}
-        </div>
+      ) : !user ? (
+        <p className="text-xs text-muted">
+          Sign in with Google (top right) to see today's events.
+        </p>
       ) : status === "loading" ? (
         <p className="text-xs text-muted">Loading…</p>
+      ) : status === "error" ? (
+        <div className="space-y-2">
+          <p className="text-xs text-rose-400">{error}</p>
+          <button
+            onClick={load}
+            className="rounded-lg bg-surface-2 px-3 py-1.5 text-xs text-muted hover:text-fg"
+          >
+            Retry
+          </button>
+        </div>
       ) : events.length === 0 ? (
         <p className="text-xs text-muted">Nothing on the calendar today. 🎉</p>
       ) : (

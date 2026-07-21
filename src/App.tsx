@@ -7,8 +7,15 @@ import Pomodoro from "./components/Pomodoro";
 import CommandPalette from "./components/CommandPalette";
 import AppBackground from "./components/AppBackground";
 import CalendarPanel from "./components/CalendarPanel";
+import { useEffect } from "react";
+import { initSync } from "./lib/sync";
 
 export default function App() {
+  // Start Supabase auth + cross-device sync (no-op until Supabase is configured).
+  useEffect(() => {
+    initSync();
+  }, []);
+
   return (
     <div className="mx-auto min-h-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
       <AppBackground />
