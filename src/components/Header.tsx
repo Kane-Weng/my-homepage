@@ -18,7 +18,8 @@ export default function Header() {
   const settingsName = useStore((s) => s.settings.name);
   const googleName = useSync((s) => s.user?.name);
   // Settings display name wins; else the Google account name; else a neutral default.
-  const name = settingsName.trim() || googleName?.split(" ")[0] || "there";
+  // `settingsName` can be undefined if older synced/imported data lacks the field.
+  const name = settingsName?.trim() || googleName?.split(" ")[0] || "there";
 
   useEffect(() => {
     const id = setInterval(() => setHour(new Date().getHours()), 60_000);

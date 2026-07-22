@@ -3,6 +3,7 @@ import { storeGoogleRefreshToken } from "./googleAuth";
 import { useStore } from "../store/useStore";
 import { useSync } from "../store/useSync";
 import { snapshot } from "./backup";
+import { DEFAULT_SETTINGS } from "../data/defaults";
 import type {
   Category,
   Habit,
@@ -33,6 +34,22 @@ let hydrated = false; // ignore the store-subscribe fired during initial merge
 function markLocalChange() {
   lastLocalChangeAt = Date.now();
   localStorage.setItem(LOCAL_TS_KEY, String(lastLocalChangeAt));
+}
+
+// Remote/older snapshots can predate newer fields (todos, settings.name,
+// pomodoro.focusMode). Backfill from defaults — mirrors the persist migration —
+// so applying them never leaves a selector reading undefined (which would crash
+// a component, e.g. Header calling settings.name.trim()).
+function normalize(s: SyncSnapshot): SyncSnapshot {
+  return {
+    ...s,
+    todos: Array.isArray(s.todos) ? s.todos : [],
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...s.settings,
+      pomodoro: { ...DEFAULT_SETTINGS.pomodoro, ...s.settings?.pomodoro },
+    },
+  };
 }
 
 // ---- Merge: last-write-wins on the whole snapshot ----
@@ -70,7 +87,7 @@ async function pull(userId: string): Promise<void> {
   const merged = merge(local, remote, remoteNewer);
 
   // Apply merged state locally, then write it back so both sides converge.
-  useStore.setState(merged);
+  useStore.setState(normalize(merged));
   await push(userId);
 }
 
