@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   Background,
+  BgImage,
   Category,
   Completion,
   DateStr,
@@ -74,6 +75,9 @@ interface AppState {
   updateSettings: (patch: Partial<Settings>) => void;
   setMode: (mode: LinkMode) => void;
   setBackground: (background: Background) => void;
+  setModeBackground: (mode: LinkMode, background: Background | null) => void;
+  addBackgroundImage: (img: BgImage) => void;
+  removeBackgroundImage: (id: string) => void;
 }
 
 const completionKey = (habitId: string, date: DateStr) => `${habitId}|${date}`;
@@ -212,13 +216,48 @@ export const useStore = create<AppState>()(
         set((s) => ({ settings: { ...s.settings, mode } })),
       setBackground: (background) =>
         set((s) => ({ settings: { ...s.settings, background } })),
+      setModeBackground: (mode, background) =>
+        set((s) => {
+          const modeBackgrounds = { ...s.settings.modeBackgrounds };
+          if (background) modeBackgrounds[mode] = background;
+          else delete modeBackgrounds[mode];
+          return { settings: { ...s.settings, modeBackgrounds } };
+        }),
+      addBackgroundImage: (img) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            backgroundLibrary: [...s.settings.backgroundLibrary, img],
+          },
+        })),
+      removeBackgroundImage: (id) =>
+        set((s) => {
+          // Drop the entry and reset any background that referenced it.
+          const clear = (bg: Background): Background =>
+            bg.kind === "image" && bg.id === id ? { kind: "default" } : bg;
+          const modeBackgrounds: Partial<Record<LinkMode, Background>> = {};
+          for (const [m, bg] of Object.entries(s.settings.modeBackgrounds)) {
+            if (bg) modeBackgrounds[m as LinkMode] = clear(bg);
+          }
+          return {
+            settings: {
+              ...s.settings,
+              backgroundLibrary: s.settings.backgroundLibrary.filter(
+                (i) => i.id !== id,
+              ),
+              background: clear(s.settings.background),
+              modeBackgrounds,
+            },
+          };
+        }),
     }),
     {
       name: "my-homepage",
-      version: 3,
+      version: 4,
       // v1 saved data predates background/mode/googleClientId; v3 adds the todos
-      // slice. Backfill missing settings fields and top-level collections from
-      // defaults so selectors never read undefined.
+      // slice; v4 adds pomodoro.enabled/pureTimer and the background library.
+      // Backfill missing settings fields and top-level collections from defaults
+      // so selectors never read undefined.
       migrate: (persisted) => {
         const state = persisted as {
           settings?: Partial<Settings>;

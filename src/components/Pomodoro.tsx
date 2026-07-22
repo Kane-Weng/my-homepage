@@ -22,6 +22,8 @@ export default function Pomodoro() {
   const updateSettings = useStore((s) => s.updateSettings);
   const pomodoroSignal = useUI((s) => s.pomodoroSignal);
 
+  const pure = cfg.pureTimer;
+
   const phaseLen = useCallback(
     (p: Phase) =>
       (p === "work" ? cfg.work : p === "break" ? cfg.break : cfg.longBreak) * 60,
@@ -47,6 +49,13 @@ export default function Pomodoro() {
 
   const advance = useCallback(() => {
     started.current = false;
+    // Pure timer: one phase, no work/break split — just stop and re-arm.
+    if (cfg.pureTimer) {
+      setPhase("work");
+      setRemaining(cfg.work * 60);
+      setRunning(false);
+      return;
+    }
     setPhase((prev) => {
       if (prev === "work") {
         const next = completed + 1;
@@ -60,7 +69,7 @@ export default function Pomodoro() {
       return "work";
     });
     setRunning(false);
-  }, [completed, cfg.longBreakEvery, phaseLen]);
+  }, [completed, cfg.longBreakEvery, cfg.pureTimer, cfg.work, phaseLen]);
 
   // Countdown loop.
   useEffect(() => {
@@ -103,7 +112,7 @@ export default function Pomodoro() {
   const reset = () => {
     started.current = false;
     setRunning(false);
-    setRemaining(phaseLen(phase));
+    setRemaining(phaseLen(pure ? "work" : phase));
   };
   const skip = () => advance();
 
@@ -118,11 +127,22 @@ export default function Pomodoro() {
     }
   };
 
-  const total = phaseLen(phase);
+  const setMinutes = (raw: string) => {
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n) || n < 1) return;
+    updateSettings({ pomodoro: { ...cfg, work: n } });
+    if (!running) {
+      started.current = false;
+      setRemaining(n * 60);
+    }
+  };
+
+  const total = pure ? cfg.work * 60 : phaseLen(phase);
   const pct = total === 0 ? 0 : 1 - remaining / total;
-  const accent = phase === "work" ? "var(--color-accent)" : "var(--color-accent-2)";
+  const accent =
+    pure || phase === "work" ? "var(--color-accent)" : "var(--color-accent-2)";
   const timeText = `${pad(Math.floor(remaining / 60))}:${pad(remaining % 60)}`;
-  const showAdjust = !running;
+  const showAdjust = !running && !pure;
   const inSession = running || remaining < total;
   const overlayOpen = focusActive && cfg.focusMode;
   const glow = running && !overlayOpen; // running but not magnified → highlight the card
@@ -155,12 +175,14 @@ export default function Pomodoro() {
       >
         Reset
       </button>
-      <button
-        onClick={skip}
-        className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted hover:text-fg"
-      >
-        Skip
-      </button>
+      {!pure && (
+        <button
+          onClick={skip}
+          className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted hover:text-fg"
+        >
+          Skip
+        </button>
+      )}
     </>
   );
 
@@ -174,10 +196,12 @@ export default function Pomodoro() {
       }
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-muted">Pomodoro</h2>
+        <h2 className="text-sm font-medium text-muted">
+          {pure ? "Timer" : "Pomodoro"}
+        </h2>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted">
-            {PHASE_LABEL[phase]} · {completed} done
+            {pure ? "Timer" : `${PHASE_LABEL[phase]} · ${completed} done`}
           </span>
           {cfg.focusMode && !overlayOpen && inSession && (
             <button
@@ -210,9 +234,26 @@ export default function Pomodoro() {
             −
           </button>
         )}
-        <div className="tabular-nums text-4xl font-semibold tracking-tight">
-          {timeText}
-        </div>
+
+        {pure && !running ? (
+          // Pure timer, idle: type the minutes directly (no min/max).
+          <div className="flex items-baseline gap-1.5">
+            <input
+              type="number"
+              min={1}
+              value={cfg.work}
+              onChange={(e) => setMinutes(e.target.value)}
+              aria-label="Timer minutes"
+              className="w-20 rounded-lg bg-surface-2 px-2 py-1 text-4xl font-semibold tabular-nums tracking-tight outline-none ring-accent-2/50 focus:ring-2"
+            />
+            <span className="text-sm text-muted">min</span>
+          </div>
+        ) : (
+          <div className="tabular-nums text-4xl font-semibold tracking-tight">
+            {timeText}
+          </div>
+        )}
+
         {showAdjust && (
           <button
             onClick={() => changeDuration(STEP)}
@@ -257,7 +298,7 @@ export default function Pomodoro() {
             </button>
 
             <span className="text-sm uppercase tracking-[0.3em] text-muted">
-              {PHASE_LABEL[phase]}
+              {pure ? "Timer" : PHASE_LABEL[phase]}
               {!running && " · paused"}
             </span>
             <div

@@ -27,12 +27,16 @@ sync and Google Calendar are **optional** add-ons powered by Supabase.
   entertainment links; Relax mode hides work links).
 - **Sticky notes**: instant capture, auto-saved.
 - **Pomodoro timer**: configurable work/break, long break every N sessions, inline ± to
-  adjust the work length, and an optional **focus mode** that magnifies and centers the
-  timer while it runs (toggle in Settings; minimize with the corner icon or Esc).
+  adjust the length, and an optional **focus mode** that magnifies and centers the timer
+  while it runs (minimize with the corner icon or Esc). In Settings you can hide the section
+  entirely or switch to **pure-timer** mode (one phase, no work/break split, type any
+  duration).
 - **Command palette (⌘K / Ctrl+K)**: search, open links, add a habit/note, start Pomodoro.
 - **Customization**: a **display name** for the greeting (falls back to your Google account
-  name), background presets, image URL, or uploaded image (stored in IndexedDB); dark theme
-  is hardcoded in [src/index.css](src/index.css).
+  name), and a **background library** — presets, saved image URLs, or uploads (kept in
+  IndexedDB to reuse), with optional **per-mode backgrounds** (a different look for
+  Work/Relax) and a **random** shuffle from your saved images. Dark theme is hardcoded in
+  [src/index.css](src/index.css).
 - **Calendar**: reads today's and tomorrow's Google Calendar events (optional; see Sync below).
 - **Backup + sync**; Export/Import JSON, and optional cross-device sync (see Sync below).
 

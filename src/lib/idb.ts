@@ -46,5 +46,8 @@ export const idbGet = (key: string): Promise<Blob | undefined> =>
 export const idbDel = (key: string): Promise<undefined> =>
   tx<undefined>("readwrite", (s) => s.delete(key));
 
-/** Fixed key for the single custom background image. */
+/** Fixed key for the legacy single custom background image. */
 export const BG_IMAGE_KEY = "bg-image";
+
+/** IDB key for a background-library image blob. */
+export const bgKey = (id: string): string => `bg-${id}`;

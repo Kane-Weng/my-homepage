@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import ModeSwitcher from "./ModeSwitcher";
 import Settings from "./Settings";
-import AccountButton from "./AccountButton";
 import { useStore } from "../store/useStore";
 import { useSync } from "../store/useSync";
 
@@ -40,7 +39,6 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <AccountButton />
         <ModeSwitcher />
         <button
           onClick={() => setSettingsOpen(true)}

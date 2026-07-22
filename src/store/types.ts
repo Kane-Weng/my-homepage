@@ -58,13 +58,26 @@ export interface QuickLink {
 /** Which links are shown. work hides entertainment; relax hides work. */
 export type LinkMode = "all" | "work" | "relax";
 
+/** An image saved to the user's background library. `url` images store their
+ *  address; `upload` images store a Blob in IndexedDB under `bg-<id>`. */
+export interface BgImage {
+  id: string;
+  kind: "url" | "upload";
+  /** The remote address for `url` images; unused for uploads. */
+  value?: string;
+}
+
 /** Page background. Discriminated union so each kind carries only what it needs.
- *  "upload" reads a Blob from IndexedDB under a fixed key (see lib/idb.ts). */
+ *  - "upload"/"url" (legacy) are the pre-library single-image kinds, still read.
+ *  - "image" references a library entry by id.
+ *  - "random" picks a library image on each load. */
 export type Background =
   | { kind: "default" }
   | { kind: "gradient"; value: string } // a CSS gradient string
-  | { kind: "url"; value: string } // remote image URL
-  | { kind: "upload" };
+  | { kind: "url"; value: string } // remote image URL (legacy single)
+  | { kind: "upload" } // legacy single uploaded image (fixed IDB key)
+  | { kind: "image"; id: string } // a library image
+  | { kind: "random" }; // random pick from the library
 
 export interface PomodoroSettings {
   /** Minutes. */
@@ -75,6 +88,10 @@ export interface PomodoroSettings {
   longBreakEvery: number;
   /** Magnify + center the timer when running. */
   focusMode: boolean;
+  /** Show the Pomodoro section at all. */
+  enabled: boolean;
+  /** Pure countdown: one phase, no work/break split, free-typed duration. */
+  pureTimer: boolean;
 }
 
 export interface Settings {
@@ -83,7 +100,12 @@ export interface Settings {
   /** Base URL that receives the query as `?q=`. */
   searchEngine: string;
   pomodoro: PomodoroSettings;
+  /** The default background (used for "All" mode and as the per-mode fallback). */
   background: Background;
+  /** Saved background images the user can reuse. */
+  backgroundLibrary: BgImage[];
+  /** Optional per-mode background overrides; falls back to `background`. */
+  modeBackgrounds: Partial<Record<LinkMode, Background>>;
   mode: LinkMode;
   /** User's own Google OAuth client ID (created in Google Cloud Console).
    *  Empty until they paste it in Settings; required for Calendar sync. */

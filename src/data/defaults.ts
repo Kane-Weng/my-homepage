@@ -78,8 +78,18 @@ export const DEFAULT_LINKS: QuickLink[] = [
 export const DEFAULT_SETTINGS: Settings = {
   name: "",
   searchEngine: "https://www.google.com/search",
-  pomodoro: { work: 25, break: 5, longBreak: 15, longBreakEvery: 4, focusMode: true },
+  pomodoro: {
+    work: 25,
+    break: 5,
+    longBreak: 15,
+    longBreakEvery: 4,
+    focusMode: true,
+    enabled: true,
+    pureTimer: false,
+  },
   background: { kind: "default" },
+  backgroundLibrary: [],
+  modeBackgrounds: {},
   mode: "all",
   googleClientId: "",
 };

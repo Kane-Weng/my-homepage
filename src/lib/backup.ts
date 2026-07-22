@@ -17,7 +17,7 @@ export interface BackupData {
 export function snapshot(): BackupData {
   const s = useStore.getState();
   return {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     categories: s.categories,
     habits: s.habits,

@@ -91,7 +91,7 @@ export default function CalendarPanel() {
         </p>
       ) : !user ? (
         <p className="text-xs text-muted">
-          Sign in with Google (top right) to see today's and tomorrow's events.
+          Sign in with Google (Settings → General) to see today's and tomorrow's events.
         </p>
       ) : status === "loading" ? (
         <p className="text-xs text-muted">Loading…</p>

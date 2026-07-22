@@ -5,10 +5,21 @@ interface Props {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Tailwind max-width class for the dialog. Default: max-w-md. */
+  widthClass?: string;
+  /** Skip the built-in title + padding (children own the full layout). */
+  bare?: boolean;
 }
 
 /** Minimal accessible modal: backdrop click + Esc to close. */
-export default function Modal({ open, onClose, title, children }: Props) {
+export default function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  widthClass = "max-w-md",
+  bare = false,
+}: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -27,10 +38,12 @@ export default function Modal({ open, onClose, title, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-5 shadow-2xl"
+        className={`max-h-[85vh] w-full ${widthClass} rounded-xl border border-border bg-surface shadow-2xl ${
+          bare ? "overflow-hidden" : "overflow-y-auto p-5"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 text-base font-semibold">{title}</h2>
+        {!bare && <h2 className="mb-4 text-base font-semibold">{title}</h2>}
         {children}
       </div>
     </div>

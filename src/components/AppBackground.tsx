@@ -1,33 +1,64 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store/useStore";
-import { BG_IMAGE_KEY, idbGet } from "../lib/idb";
+import { BG_IMAGE_KEY, bgKey, idbGet } from "../lib/idb";
 
 /** Fixed full-screen layer behind all content that paints the chosen
- *  background. Image backgrounds get a dark scrim so text stays readable. */
+ *  background. Resolves per-mode overrides and random-from-library, then loads
+ *  any uploaded blob from IndexedDB. Image backgrounds get a dark scrim so text
+ *  stays readable. */
 export default function AppBackground() {
-  const bg = useStore((s) => s.settings.background);
-  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
+  const background = useStore((s) => s.settings.background);
+  const modeBackgrounds = useStore((s) => s.settings.modeBackgrounds);
+  const library = useStore((s) => s.settings.backgroundLibrary);
+  const mode = useStore((s) => s.settings.mode);
 
-  // Load the uploaded blob from IndexedDB and mint an object URL for it.
+  // Per-mode override wins; otherwise the global/default background.
+  const active = modeBackgrounds[mode] ?? background;
+
+  // For "random", pick one library entry — stable until deps change / remount.
+  const randomId = useMemo(() => {
+    if (active.kind !== "random" || library.length === 0) return null;
+    return library[Math.floor(Math.random() * library.length)].id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active.kind, library, mode]);
+
+  // Resolve the active background to a direct URL and/or an IDB blob key.
+  let directSrc: string | null = null;
+  let idbLoadKey: string | null = null;
+  if (active.kind === "url") {
+    directSrc = active.value;
+  } else if (active.kind === "upload") {
+    idbLoadKey = BG_IMAGE_KEY;
+  } else if (active.kind === "image" || active.kind === "random") {
+    const id = active.kind === "image" ? active.id : randomId;
+    const entry = id ? library.find((i) => i.id === id) : undefined;
+    if (entry) {
+      if (entry.kind === "url") directSrc = entry.value ?? null;
+      else idbLoadKey = bgKey(entry.id);
+    }
+  }
+
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (bg.kind !== "upload") {
-      setUploadUrl(null);
+    if (!idbLoadKey) {
+      setBlobUrl(null);
       return;
     }
     let url: string | null = null;
-    idbGet(BG_IMAGE_KEY).then((blob) => {
-      if (blob) {
+    let cancelled = false;
+    idbGet(idbLoadKey).then((blob) => {
+      if (blob && !cancelled) {
         url = URL.createObjectURL(blob);
-        setUploadUrl(url);
+        setBlobUrl(url);
       }
     });
     return () => {
+      cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [bg.kind]);
+  }, [idbLoadKey]);
 
-  const imageUrl =
-    bg.kind === "url" ? bg.value : bg.kind === "upload" ? uploadUrl : null;
+  const imageUrl = directSrc ?? blobUrl;
 
   const style: React.CSSProperties = imageUrl
     ? {
@@ -35,8 +66,8 @@ export default function AppBackground() {
         backgroundSize: "cover",
         backgroundPosition: "center",
       }
-    : bg.kind === "gradient"
-      ? { background: bg.value }
+    : active.kind === "gradient"
+      ? { background: active.value }
       : { background: "var(--color-bg)" };
 
   return (

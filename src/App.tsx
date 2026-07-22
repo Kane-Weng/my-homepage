@@ -9,11 +9,17 @@ import AppBackground from "./components/AppBackground";
 import CalendarPanel from "./components/CalendarPanel";
 import { useEffect } from "react";
 import { initSync } from "./lib/sync";
+import { useStore } from "./store/useStore";
+import { importLegacyBackground } from "./lib/background";
 
 export default function App() {
+  const pomodoroEnabled = useStore((s) => s.settings.pomodoro.enabled);
+
   // Start Supabase auth + cross-device sync (no-op until Supabase is configured).
   useEffect(() => {
     initSync();
+    // Fold any pre-library single background image into the new library.
+    importLegacyBackground().catch(() => {});
   }, []);
 
   return (
@@ -35,7 +41,7 @@ export default function App() {
         <div className="space-y-6">
           <QuickLinks />
           <CalendarPanel />
-          <Pomodoro />
+          {pomodoroEnabled && <Pomodoro />}
           <StickyNotes />
         </div>
       </main>
