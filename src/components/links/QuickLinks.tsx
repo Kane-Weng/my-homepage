@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../../store/useStore";
 import Modal from "../ui/Modal";
 import type { LinkMode, LinkTag, QuickLink } from "../../store/types";
+
+/** Tiles per page — 4 columns × 2 rows, iOS home-screen style. */
+const PAGE_SIZE = 8;
 
 function faviconUrl(url: string): string {
   try {
@@ -97,12 +100,34 @@ export default function QuickLinks() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [tag, setTag] = useState<LinkTag>("neutral");
+  const pagesRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(0);
 
   // In edit mode show every link (so hidden ones can be managed); otherwise
   // apply the active mode filter.
   const shown = editing
     ? links
     : links.filter((l) => visibleInMode(l.tag ?? "neutral", mode));
+
+  // Chunk links into fixed-size pages (iOS home-screen style).
+  const pages: QuickLink[][] = [];
+  for (let i = 0; i < shown.length; i += PAGE_SIZE) {
+    pages.push(shown.slice(i, i + PAGE_SIZE));
+  }
+
+  const onScroll = () => {
+    const el = pagesRef.current;
+    if (el) setPage(Math.round(el.scrollLeft / el.clientWidth));
+  };
+  const goTo = (i: number) => {
+    const el = pagesRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  };
+
+  // Keep the active page valid as links (and page count) change.
+  useEffect(() => {
+    if (page > pages.length - 1) setPage(Math.max(0, pages.length - 1));
+  }, [pages.length, page]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +141,7 @@ export default function QuickLinks() {
   };
 
   return (
-    <section>
+    <section className="rounded-2xl border border-border bg-surface/40 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted">Quick links</h2>
         <div className="flex gap-3 text-xs">
@@ -135,11 +160,47 @@ export default function QuickLinks() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-        {shown.map((l) => (
-          <LinkTile key={l.id} link={l} editing={editing} />
-        ))}
-      </div>
+      {/* Swipeable pages of 4×2 tiles that snap into place, like an iOS home
+          screen. Extra padding keeps the edit-mode corner buttons from clipping. */}
+      {shown.length === 0 ? (
+        <p className="px-1 py-6 text-center text-xs text-muted">
+          No links yet — add one with “+ Add”.
+        </p>
+      ) : (
+        <>
+          <div
+            ref={pagesRef}
+            onScroll={onScroll}
+            className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto py-2"
+          >
+            {pages.map((pageLinks, i) => (
+              <div
+                key={i}
+                className="grid w-full shrink-0 snap-center grid-cols-4 grid-rows-2 gap-3 px-2"
+              >
+                {pageLinks.map((l) => (
+                  <LinkTile key={l.id} link={l} editing={editing} />
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {pages.length > 1 && (
+            <div className="mt-1 flex justify-center gap-1.5">
+              {pages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  aria-label={`Go to page ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === page ? "w-4 bg-accent-2" : "w-1.5 bg-surface-2"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {editing && (
         <p className="mt-2 text-[11px] text-muted">

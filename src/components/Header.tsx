@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import ModeSwitcher from "./ModeSwitcher";
 import Settings from "./Settings";
 import AccountButton from "./AccountButton";
+import { useStore } from "../store/useStore";
+import { useSync } from "../store/useSync";
 
 function greeting(h: number): string {
   if (h < 5) return "Still up";
@@ -10,9 +12,13 @@ function greeting(h: number): string {
   return "Good evening";
 }
 
-export default function Header({ name = "Kane" }: { name?: string }) {
+export default function Header() {
   const [hour, setHour] = useState(() => new Date().getHours());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsName = useStore((s) => s.settings.name);
+  const googleName = useSync((s) => s.user?.name);
+  // Settings display name wins; else the Google account name; else a neutral default.
+  const name = settingsName.trim() || googleName?.split(" ")[0] || "there";
 
   useEffect(() => {
     const id = setInterval(() => setHour(new Date().getHours()), 60_000);

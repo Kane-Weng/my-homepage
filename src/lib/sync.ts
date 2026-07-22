@@ -3,7 +3,14 @@ import { storeGoogleRefreshToken } from "./googleAuth";
 import { useStore } from "../store/useStore";
 import { useSync } from "../store/useSync";
 import { snapshot } from "./backup";
-import type { Category, Habit, QuickLink, Settings, StickyNote } from "../store/types";
+import type {
+  Category,
+  Habit,
+  QuickLink,
+  Settings,
+  StickyNote,
+  Todo,
+} from "../store/types";
 
 /** The shape we store in / read from Supabase. */
 interface SyncSnapshot {
@@ -12,6 +19,7 @@ interface SyncSnapshot {
   completions: Record<string, { habitId: string; date: string }>;
   links: QuickLink[];
   notes: StickyNote[];
+  todos: Todo[];
   settings: Settings;
 }
 
@@ -101,7 +109,14 @@ export function initSync(): void {
 
   supabase.auth.onAuthStateChange(async (_event, session) => {
     const user = session?.user ?? null;
-    useSync.getState().setUser(user ? { id: user.id, email: user.email } : null);
+    const meta = user?.user_metadata as
+      | { full_name?: string; name?: string }
+      | undefined;
+    useSync.getState().setUser(
+      user
+        ? { id: user.id, email: user.email, name: meta?.full_name ?? meta?.name }
+        : null,
+    );
 
     if (!user) {
       hydrated = false;

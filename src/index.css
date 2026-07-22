@@ -34,3 +34,13 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
+
+/* Opt-out: fully hide the scrollbar (e.g. the paged quick-links launcher,
+   which uses page dots as its own indicator). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox + modern Chrome */
+  -ms-overflow-style: none; /* old Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* WebKit */
+}

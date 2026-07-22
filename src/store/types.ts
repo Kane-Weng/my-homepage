@@ -25,6 +25,17 @@ export interface Completion {
   date: DateStr;
 }
 
+export interface Todo {
+  id: string;
+  title: string;
+  categoryId?: string;
+  /** Optional day the task was picked up — gives a range with completedAt. */
+  startedAt?: DateStr;
+  /** Set when finished; presence marks the to-do as complete. */
+  completedAt?: DateStr;
+  createdAt: number;
+}
+
 export interface StickyNote {
   id: string;
   content: string;
@@ -62,9 +73,13 @@ export interface PomodoroSettings {
   longBreak: number;
   /** Number of work sessions before a long break. */
   longBreakEvery: number;
+  /** Magnify + center the timer when running. */
+  focusMode: boolean;
 }
 
 export interface Settings {
+  /** Display name for the greeting. Empty falls back to the Google account name. */
+  name: string;
   /** Base URL that receives the query as `?q=`. */
   searchEngine: string;
   pomodoro: PomodoroSettings;

@@ -10,6 +10,7 @@ import type {
   QuickLink,
   Settings,
   StickyNote,
+  Todo,
   Weekday,
 } from "./types";
 import {
@@ -30,6 +31,7 @@ interface AppState {
   completions: Record<string, Completion>;
   notes: StickyNote[];
   links: QuickLink[];
+  todos: Todo[];
   settings: Settings;
 
   // Categories
@@ -63,6 +65,11 @@ interface AppState {
   updateLink: (id: string, patch: Partial<Omit<QuickLink, "id">>) => void;
   removeLink: (id: string) => void;
 
+  // Todos
+  addTodo: (input: { title: string; categoryId?: string; startedAt?: DateStr }) => void;
+  updateTodo: (id: string, patch: Partial<Omit<Todo, "id">>) => void;
+  removeTodo: (id: string) => void;
+
   // Settings
   updateSettings: (patch: Partial<Settings>) => void;
   setMode: (mode: LinkMode) => void;
@@ -79,6 +86,7 @@ export const useStore = create<AppState>()(
       completions: {},
       notes: [],
       links: DEFAULT_LINKS,
+      todos: [],
       settings: DEFAULT_SETTINGS,
 
       addCategory: (name) => {
@@ -178,6 +186,26 @@ export const useStore = create<AppState>()(
       removeLink: (id) =>
         set((s) => ({ links: s.links.filter((l) => l.id !== id) })),
 
+      addTodo: ({ title, categoryId, startedAt }) =>
+        set((s) => ({
+          todos: [
+            ...s.todos,
+            {
+              id: uid("todo"),
+              title: title.trim(),
+              categoryId,
+              startedAt,
+              createdAt: Date.now(),
+            },
+          ],
+        })),
+      updateTodo: (id, patch) =>
+        set((s) => ({
+          todos: s.todos.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+        })),
+      removeTodo: (id) =>
+        set((s) => ({ todos: s.todos.filter((t) => t.id !== id) })),
+
       updateSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),
       setMode: (mode) =>
@@ -187,14 +215,22 @@ export const useStore = create<AppState>()(
     }),
     {
       name: "my-homepage",
-      version: 2,
-      // v1 saved data predates background/mode/googleClientId. Backfill any
-      // missing settings fields from defaults so selectors never read undefined.
+      version: 3,
+      // v1 saved data predates background/mode/googleClientId; v3 adds the todos
+      // slice. Backfill missing settings fields and top-level collections from
+      // defaults so selectors never read undefined.
       migrate: (persisted) => {
-        const state = persisted as { settings?: Partial<Settings> };
+        const state = persisted as {
+          settings?: Partial<Settings>;
+          todos?: Todo[];
+        };
+        const settings = { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) };
+        // pomodoro is nested — deep-merge so new fields (e.g. focusMode) are set.
+        settings.pomodoro = { ...DEFAULT_SETTINGS.pomodoro, ...settings.pomodoro };
         return {
           ...(persisted as object),
-          settings: { ...DEFAULT_SETTINGS, ...(state.settings ?? {}) },
+          todos: state.todos ?? [],
+          settings,
         } as AppState;
       },
     },

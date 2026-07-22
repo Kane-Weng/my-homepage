@@ -10,19 +10,21 @@ export interface BackupData {
   completions: unknown;
   notes: unknown;
   links: unknown;
+  todos: unknown;
   settings: unknown;
 }
 
 export function snapshot(): BackupData {
   const s = useStore.getState();
   return {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     categories: s.categories,
     habits: s.habits,
     completions: s.completions,
     notes: s.notes,
     links: s.links,
+    todos: s.todos,
     settings: s.settings,
   };
 }
@@ -53,6 +55,7 @@ export async function importData(file: File): Promise<void> {
     completions: parsed.completions ?? current.completions,
     notes: parsed.notes ?? current.notes,
     links: parsed.links ?? current.links,
+    todos: parsed.todos ?? current.todos,
     settings: { ...current.settings, ...(parsed.settings ?? {}) },
   });
 }

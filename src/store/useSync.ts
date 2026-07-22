@@ -10,6 +10,8 @@ export type SyncStatus =
 export interface SyncUser {
   id: string;
   email?: string;
+  /** Full name from the Google account, when available. */
+  name?: string;
 }
 
 interface SyncState {

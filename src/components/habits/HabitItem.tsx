@@ -5,17 +5,68 @@ import type { Category, Habit } from "../../store/types";
 interface Props {
   habit: Habit;
   category?: Category;
+  editing?: boolean;
+  categories?: Category[];
 }
 
-export default function HabitItem({ habit, category }: Props) {
+export default function HabitItem({ habit, category, editing, categories }: Props) {
   const completions = useStore((s) => s.completions);
   const toggle = useStore((s) => s.toggleCompletion);
   const removeHabit = useStore((s) => s.removeHabit);
+  const updateHabit = useStore((s) => s.updateHabit);
 
   const today = todayStr();
   const done = !!completions[`${habit.id}|${today}`];
   const streak = currentStreak(habit, completions);
   const accent = category?.color ?? "var(--color-muted)";
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+        <input
+          defaultValue={habit.title}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== habit.title) updateHabit(habit.id, { title: v });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          aria-label={`Edit habit name for ${habit.title}`}
+          className="min-w-0 flex-1 rounded-md bg-surface-2 px-2 py-1 text-sm outline-none ring-accent-2/50 focus:ring-2"
+        />
+        <select
+          value={habit.categoryId}
+          onChange={(e) => updateHabit(habit.id, { categoryId: e.target.value })}
+          aria-label={`Category for ${habit.title}`}
+          className="shrink-0 rounded-md bg-surface-2 px-2 py-1 text-xs text-muted outline-none ring-accent-2/50 focus:ring-2"
+        >
+          {!categories?.some((c) => c.id === habit.categoryId) && (
+            <option value={habit.categoryId}>Uncategorized</option>
+          )}
+          {categories?.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => removeHabit(habit.id)}
+          aria-label={`Delete ${habit.title}`}
+          className="shrink-0 text-muted hover:text-rose-400"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div

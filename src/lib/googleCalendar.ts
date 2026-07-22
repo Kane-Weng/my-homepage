@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay } from "date-fns";
+import { addDays, endOfDay, startOfDay } from "date-fns";
 
 export interface CalendarEvent {
   id: string;
@@ -15,16 +15,17 @@ interface RawEvent {
   start: { dateTime?: string; date?: string };
 }
 
-/** Fetch today's events from the user's primary calendar, sorted by start.
- *  `token` is a Google access token (obtained via the Supabase Edge Function). */
-export async function fetchTodayEvents(token: string): Promise<CalendarEvent[]> {
+/** Fetch today's and tomorrow's events from the user's primary calendar,
+ *  sorted by start. `token` is a Google access token (obtained via the
+ *  Supabase Edge Function). */
+export async function fetchUpcomingEvents(token: string): Promise<CalendarEvent[]> {
   const now = new Date();
   const params = new URLSearchParams({
     timeMin: startOfDay(now).toISOString(),
-    timeMax: endOfDay(now).toISOString(),
+    timeMax: endOfDay(addDays(now, 1)).toISOString(),
     singleEvents: "true",
     orderBy: "startTime",
-    maxResults: "25",
+    maxResults: "50",
   });
 
   const res = await fetch(

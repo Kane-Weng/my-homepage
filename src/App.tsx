@@ -1,6 +1,6 @@
 import Header from "./components/Header";
 import SearchBar from "./components/SearchBar";
-import HabitTracker from "./components/habits/HabitTracker";
+import TrackerPanel from "./components/TrackerPanel";
 import QuickLinks from "./components/links/QuickLinks";
 import StickyNotes from "./components/notes/StickyNotes";
 import Pomodoro from "./components/Pomodoro";
@@ -26,9 +26,9 @@ export default function App() {
       </div>
 
       <main className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        {/* Left: the core habit tracker */}
+        {/* Left: the core habit tracker + to-dos */}
         <div className="rounded-2xl border border-border bg-surface/40 p-5">
-          <HabitTracker />
+          <TrackerPanel />
         </div>
 
         {/* Right: quick links, calendar, pomodoro, sticky notes */}

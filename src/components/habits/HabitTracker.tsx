@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useStore } from "../../store/useStore";
 import { useUI } from "../../store/useUI";
 import { isScheduledOn, todayStr } from "../../lib/dates";
@@ -14,6 +14,7 @@ export default function HabitTracker() {
   const completions = useStore((s) => s.completions);
   const addHabitOpen = useUI((s) => s.addHabitOpen);
   const setAddHabitOpen = useUI((s) => s.setAddHabitOpen);
+  const [editing, setEditing] = useState(false);
 
   const today = todayStr();
   const now = useMemo(() => new Date(), []);
@@ -65,12 +66,24 @@ export default function HabitTracker() {
                 : `${groups.total - doneCount} left to go.`}
           </p>
         </div>
-        <button
-          onClick={() => setAddHabitOpen(true)}
-          className="rounded-lg bg-accent-2 px-3 py-2 text-sm font-medium text-bg hover:opacity-90"
-        >
-          + Add
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setEditing((e) => !e)}
+            className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+              editing
+                ? "border-accent-2 text-accent-2"
+                : "border-border text-muted hover:text-fg"
+            }`}
+          >
+            {editing ? "Done" : "Edit"}
+          </button>
+          <button
+            onClick={() => setAddHabitOpen(true)}
+            className="rounded-lg bg-accent-2 px-3 py-2 text-sm font-medium text-bg hover:opacity-90"
+          >
+            + Add
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto pr-1">
@@ -87,7 +100,13 @@ export default function HabitTracker() {
             </div>
             <div className="space-y-1.5">
               {items.map((h) => (
-                <HabitItem key={h.id} habit={h} category={category} />
+                <HabitItem
+                  key={h.id}
+                  habit={h}
+                  category={category}
+                  editing={editing}
+                  categories={categories}
+                />
               ))}
             </div>
           </div>

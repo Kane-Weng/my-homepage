@@ -18,16 +18,57 @@ export const BANGS: Record<string, Bang> = {
   gmap: (q) => `https://www.google.com/maps/search/${enc(q)}`,
 };
 
-/** Human-readable list for the command palette / help. */
-export const BANG_HINTS: { key: string; label: string }[] = [
-  { key: "g", label: "Google" },
-  { key: "yt", label: "YouTube" },
-  { key: "gh", label: "GitHub repos" },
-  { key: "w", label: "Wikipedia" },
-  { key: "lc", label: "LeetCode" },
-  { key: "a", label: "arXiv id" },
-  { key: "gmap", label: "Google Maps" },
-];
+/**
+ * Fetch autocomplete suggestions for a query via Google's suggest endpoint.
+ *
+ * The public suggest endpoints (Google's and DuckDuckGo's) don't send CORS
+ * headers, so a browser `fetch` can't read them from a static site. We use
+ * JSONP instead — a <script> tag isn't subject to CORS — hitting the endpoint
+ * with a `callback` param, which responds with `callback(["q", ["s1", …]])`.
+ * Resolves to [] on any failure so the search bar degrades gracefully.
+ */
+export function fetchSuggestions(query: string): Promise<string[]> {
+  const q = query.trim();
+  if (!q) return Promise.resolve([]);
+
+  return new Promise((resolve) => {
+    const cb = `__sug_cb_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+    const script = document.createElement("script");
+    let settled = false;
+
+    const cleanup = () => {
+      delete (window as unknown as Record<string, unknown>)[cb];
+      script.remove();
+    };
+    const finish = (out: string[]) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(out);
+    };
+
+    (window as unknown as Record<string, unknown>)[cb] = (data: unknown) => {
+      // Expected shape: ["query", ["s1", "s2", …], …]
+      const list =
+        Array.isArray(data) && Array.isArray(data[1]) ? (data[1] as unknown[]) : [];
+      finish(
+        list
+          .map((x) => (Array.isArray(x) ? String(x[0]) : String(x)))
+          .filter(Boolean)
+          .slice(0, 8),
+      );
+    };
+
+    script.onerror = () => finish([]);
+    script.src = `https://suggestqueries.google.com/complete/search?client=chrome&hl=en&q=${enc(
+      q,
+    )}&callback=${cb}`;
+    document.head.appendChild(script);
+
+    // Safety net if the callback never fires (blocked, offline, etc.).
+    window.setTimeout(() => finish([]), 3000);
+  });
+}
 
 /**
  * Resolve a raw search input into a destination URL.

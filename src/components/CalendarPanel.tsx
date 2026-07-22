@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { useSync } from "../store/useSync";
 import { supabaseEnabled } from "../lib/supabase";
 import { getFreshGoogleToken } from "../lib/googleAuth";
-import { fetchTodayEvents, type CalendarEvent } from "../lib/googleCalendar";
+import { fetchUpcomingEvents, type CalendarEvent } from "../lib/googleCalendar";
 
 type Status = "idle" | "loading" | "connected" | "error";
 
@@ -19,7 +19,7 @@ export default function CalendarPanel() {
     try {
       // Edge Function silently mints a fresh Google token — no popup.
       const token = await getFreshGoogleToken();
-      setEvents(await fetchTodayEvents(token));
+      setEvents(await fetchUpcomingEvents(token));
       setStatus("connected");
     } catch (e) {
       setStatus("error");
@@ -34,10 +34,39 @@ export default function CalendarPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  const todayEvents = events.filter((e) => isToday(e.start));
+  const tomorrowEvents = events.filter((e) => !isToday(e.start));
+
+  const renderGroup = (label: string, list: CalendarEvent[]) =>
+    list.length === 0 ? null : (
+      <div>
+        <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+          {label}
+        </h3>
+        <ul className="space-y-1.5">
+          {list.map((e) => (
+            <li key={e.id}>
+              <a
+                href={e.htmlLink}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-baseline gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2"
+              >
+                <span className="w-14 shrink-0 text-xs tabular-nums text-muted">
+                  {e.allDay ? "all day" : format(e.start, "HH:mm")}
+                </span>
+                <span className="truncate text-sm">{e.summary}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-muted">Today's calendar</h2>
+        <h2 className="text-sm font-medium text-muted">Schedule</h2>
         <div className="flex items-center gap-3">
           {status === "connected" && (
             <button onClick={load} className="text-xs text-muted hover:text-fg">
@@ -62,7 +91,7 @@ export default function CalendarPanel() {
         </p>
       ) : !user ? (
         <p className="text-xs text-muted">
-          Sign in with Google (top right) to see today's events.
+          Sign in with Google (top right) to see today's and tomorrow's events.
         </p>
       ) : status === "loading" ? (
         <p className="text-xs text-muted">Loading…</p>
@@ -77,25 +106,14 @@ export default function CalendarPanel() {
           </button>
         </div>
       ) : events.length === 0 ? (
-        <p className="text-xs text-muted">Nothing on the calendar today. 🎉</p>
+        <p className="text-xs text-muted">
+          Nothing on the calendar today or tomorrow. 🎉
+        </p>
       ) : (
-        <ul className="space-y-1.5">
-          {events.map((e) => (
-            <li key={e.id}>
-              <a
-                href={e.htmlLink}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-baseline gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2"
-              >
-                <span className="w-14 shrink-0 text-xs tabular-nums text-muted">
-                  {e.allDay ? "all day" : format(e.start, "HH:mm")}
-                </span>
-                <span className="truncate text-sm">{e.summary}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-3">
+          {renderGroup("Today", todayEvents)}
+          {renderGroup("Tomorrow", tomorrowEvents)}
+        </div>
       )}
     </section>
   );

@@ -43,8 +43,9 @@ interface Props {
 export default function Settings({ open, onClose }: Props) {
   const background = useStore((s) => s.settings.background);
   const setBackground = useStore((s) => s.setBackground);
-  const categories = useStore((s) => s.categories);
-  const removeCategory = useStore((s) => s.removeCategory);
+  const name = useStore((s) => s.settings.name);
+  const pomodoro = useStore((s) => s.settings.pomodoro);
+  const updateSettings = useStore((s) => s.updateSettings);
 
   const [urlDraft, setUrlDraft] = useState(
     background.kind === "url" ? background.value : "",
@@ -67,6 +68,22 @@ export default function Settings({ open, onClose }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Settings">
       <div className="space-y-6">
+        {/* Display name */}
+        <section>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Display name
+          </h3>
+          <input
+            value={name}
+            onChange={(e) => updateSettings({ name: e.target.value })}
+            placeholder="Your name (defaults to your Google account)…"
+            className="w-full rounded-lg bg-surface-2 px-3 py-2 text-sm outline-none ring-accent-2/50 focus:ring-2"
+          />
+          <p className="mt-2 text-[11px] text-muted">
+            Shown in the greeting. Leave blank to use your Google account name.
+          </p>
+        </section>
+
         {/* Background */}
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -145,39 +162,29 @@ export default function Settings({ open, onClose }: Props) {
           </div>
         </section>
 
-        {/* Categories */}
+        {/* Pomodoro */}
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-            Categories
+            Pomodoro
           </h3>
-          {categories.length === 0 ? (
-            <p className="text-xs text-muted">No categories yet.</p>
-          ) : (
-            <ul className="space-y-1">
-              {categories.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2"
-                >
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ background: c.color }}
-                  />
-                  <span className="flex-1 truncate text-sm">{c.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeCategory(c.id)}
-                    className="text-xs text-muted hover:text-rose-400"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-2 text-[11px] text-muted">
-            Removing a category keeps its habits — they move to “Uncategorized.”
-          </p>
+          <label className="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-2">
+            <span className="text-sm">
+              Focus mode
+              <span className="block text-[11px] text-muted">
+                Magnify and center the timer while it runs.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={pomodoro.focusMode}
+              onChange={(e) =>
+                updateSettings({
+                  pomodoro: { ...pomodoro, focusMode: e.target.checked },
+                })
+              }
+              className="h-4 w-4 shrink-0 accent-accent-2"
+            />
+          </label>
         </section>
 
         {/* Data backup */}
